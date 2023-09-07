@@ -1,0 +1,7 @@
+Error occurred prerendering page "/sitemap.xml". Read more: https://nextjs.org/docs/messages/prerender-error
+20:53:23	{
+20:53:23	  "cause": "TypeError [ERR_INVALID_URL]: Invalid URL",
+20:53:23	  "status": 500,
+20:53:23	  "message": "Failed to parse URL from /api/2023-01/graphql.json",
+20:53:23	  "query": "\n  query getCollections {\n    collections(first: 100, sortKey: TITLE) {\n      edges {\n        node {\n          ...collection\n        }\n      }\n    }\n  }\n  \n  fragment collection on Collection {\n    handle\n    title\n    description\n    seo {\n      ...seo\n    }\n    updatedAt\n  }\n  \n  fragment seo on SEO {\n    description\n    title\n  }\n\n\n"
+            "@vercelbot : make sure to redirect and fix errors

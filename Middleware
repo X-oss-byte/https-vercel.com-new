@@ -1,0 +1,257 @@
+export const config = {
+  matcher: '/about/:path*',
+};
+
+<JavaScript V8>
+Edge Middleware runs on the Edge Runtime, a runtime built on top of the 
+V8
+ JavaScript engine. The Edge Runtime provides a subset of Web APIs for you to use when creating Middleware. This lightweight API layer is built to be performant and execute code with minimal latency. When writing Middleware, you can use any of the supported APIs from the Edge Runtime.
+
+Edge Middleware setup
+To add Middleware to your app, you need to create a middleware.ts or middleware.js file at the same level as your app or pages directory (even if you're using a src directory):
+
+my-project
+app
+middleware.ts
+package.json
+config object
+Middleware will be invoked for every route in your project. If you only want it to be run on specific paths, you can define those either with a custom matcher config or with conditional statements.
+
+While the config option is the preferred method, as it does not get invoked on every request, you can also use conditional statements to only run the Middleware when it matches specific paths.
+
+Match paths based on custom matcher config
+To decide which route the Middleware should be run on, you can use a custom matcher config to filter on specific paths. The matcher property can be used to define either a single path, or using an array syntax for multiple paths.
+
+Edge Middleware runs on every request by default. To run on specific paths instead, use the matcher property of the Middleware config object. Even when using path matching, Edge Middleware runs on all /_next/data/ requests for getServerSideProps and getStaticProps pages for the sake of consistency. For more information, review our docs on Edge Middleware API as well as the Next.js matcher docs.
+Match a single path
+middleware.ts
+
+export const config = {
+  matcher: '/about/:path*',
+};
+Match multiple paths
+middleware.ts
+
+export const config = {
+  matcher: ['/about/:path*', '/dashboard/:path*'],
+};
+Match using regex
+The matcher config has full regex support for cases such as negative lookaheads or character matching.
+
+Match based on a negative lookahead
+To match all request paths except for the ones starting with:
+
+api (API routes)
+_next/static (static files)
+favicon.ico (favicon file)
+middleware.ts
+
+export const config = {
+  matcher: ['/((?!api|_next/static|favicon.ico).*)'],
+};
+Match based on character matching
+To match /blog/123 but not /blog/abc:
+
+middleware.ts
+
+export const config = {
+  matcher: ['/blog/:slug(\\d{1,})'],
+};
+For help on writing your own regex path matcher, review Path to regexp.
+
+Match paths based on conditional statements
+middleware.ts
+
+TypeScript
+
+import { rewrite } from '@vercel/edge';
+ 
+export function middleware(request: Request) {
+  const url = new URL(request.url);
+ 
+  if (url.pathname.startsWith('/about')) {
+    return rewrite(new URL('/about-2', request.url));
+  }
+ 
+  if (url.pathname.startsWith('/dashboard')) {
+    return rewrite(new URL('/dashboard/user', request.url));
+  }
+}
+See the @vercel/edge documentation for more information on using the @vercel/edge package.
+
+config properties
+Property
+Type
+Description
+matcher
+string / string[]
+A string or array of strings that define the paths the Middleware should be run on
+Edge Middleware signature
+The Edge Middleware signature is made up of two parameters: request and context. The request parameter is an instance of the Request object, and the context parameter is an object containing the waitUntil method. Both parameters are optional.
+
+Parameter
+Description
+Next.js
+Other Frameworks
+request
+An instance of the Request object
+NextRequest
+Request
+context
+An extension to the standard
+Request
+ object
+NextFetchEvent
+RequestContext
+Next.js Middleware comes with built in helpers that are based upon the native 
+FetchEvent
+, 
+Response
+, and 
+Request
+ objects.
+
+See the 
+next/server
+ documentation for more information.
+
+Next.js (/app)
+Next.js (/pages)
+Other frameworks
+middleware.ts
+
+TypeScript
+
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+ 
+// config with custom matcher
+export const config = {
+  matcher: '/about/:path*',
+};
+ 
+export default function middleware(request: NextRequest) {
+  return NextResponse.redirect(new URL('/about-2', request.url));
+}
+Request
+The Request object represents an HTTP request. It is a wrapper around the Fetch API Request object. When using TypeScript, you do not need to import the Request object, as it is already available in the global scope.
+
+Request Properties
+Property
+Type
+Description
+url
+string
+The URL of the request
+method
+string
+The HTTP method of the request
+headers
+Headers
+The headers of the request
+body
+ReadableStream
+The body of the request
+bodyUsed
+boolean
+Whether the body has been read
+cache
+string
+The cache mode of the request
+credentials
+string
+The credentials mode of the request
+destination
+string
+The destination of the request
+integrity
+string
+The integrity of the request
+redirect
+string
+The redirect mode of the request
+referrer
+string
+The referrer of the request
+referrerPolicy
+string
+The referrer policy of the request
+mode
+string
+The mode of the request
+signal
+AbortSignal
+The signal of the request
+arrayBuffer
+function
+Returns a promise that resolves with an ArrayBuffer
+blob
+function
+Returns a promise that resolves with a Blob
+formData
+function
+Returns a promise that resolves with a FormData
+json
+function
+Returns a promise that resolves with a JSON object
+text
+function
+Returns a promise that resolves with a string
+clone
+function
+Returns a clone of the request
+To learn more about the 
+NextRequest
+ object and its properties, visit the Next.js documentation.
+
+waitUntil
+The waitUntil() method is from the 
+ExtendableEvent
+ interface. It accepts a 
+Promise
+ as an argument, which will keep the function running until the Promise resolves.
+
+It can be used to keep the function running after a response has been sent. This is useful when you have an async task that you want to keep running after returning a response.
+
+The example below will send a response immediately, but will keep the function running for ten seconds, fetch an album and log it to the console.
+
+Next.js (/app)
+Next.js (/pages)
+Other frameworks
+middleware.ts
+
+TypeScript
+
+import { NextResponse } from 'next/server';
+import type { NextFetchEvent, NextRequest } from 'next/server';
+ 
+export const config = {
+  matcher: '/',
+};
+ 
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+ 
+async function getAlbum() {
+  const res = await fetch('https://jsonplaceholder.typicode.com/albums/1');
+  await wait(10000);
+  return res.json();
+}
+ 
+export default function middleware(
+  request: NextRequest,
+  context: NextFetchEvent,
+) {
+  context.waitUntil(getAlbum().then((json) => console.log({ json })));
+ 
+  return new NextResponse(JSON.stringify({ hello: 'world' }), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  });
+}
+Context properties
+Property
+Type
+Description
+waitUntil
+(promise: Promise<unknown>): void
+Prolongs the execution of the function until the promise passed to waitUntil is resolved
